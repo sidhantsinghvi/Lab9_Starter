@@ -3,7 +3,6 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Lab 9</title>
 
@@ -47,6 +46,14 @@
       width: 122px;
     }
   </style>
+  <script src="https://cdn.trackjs.com/agent/v3/latest/t.js"></script>
+  <script>
+    window.TrackJS && TrackJS.install({ 
+      token: "1b3bf413157e47b39e32299b54e56e6d",
+      application: "indexhtml"
+      // for more configuration options, see https://docs.trackjs.com
+    });
+  </script>
 </head>
 
 <body>
@@ -69,39 +76,101 @@
     </form>
 
     <section id="error-btns">
-      <button>Console Log</button>
-      <button>Console Error</button>
-      <button>Console Count</button>
-      <button>Console Warn</button>
-      <button>Console Assert</button>
-      <button>Console Clear</button>
-      <button>Console Dir</button>
-      <button>Console dirxml</button>
-      <button>Console Group Start</button>
-      <button>Console Group End</button>
-      <button>Console Table</button>
-      <button>Start Timer</button>
-      <button>End Timer</button>
-      <button>Console Trace</button>
-      <button>Trigger a Global Error</button>
+      <button id="log">Console Log</button>
+      <button id="error">Console Error</button>
+      <button id="count">Console Count</button>
+      <button id="warn">Console Warn</button>
+      <button id="assert">Console Assert</button>
+      <button id="clear">Console Clear</button>
+      <button id="dir">Console Dir</button>
+      <button id="dirxml">Console dirxml</button>
+      <button id="groupStart">Console Group Start</button>
+      <button id="groupEnd">Console Group End</button>
+      <button id="table">Console Table</button>
+      <button id="startTimer">Start Timer</button>
+      <button id="endTimer">End Timer</button>
+      <button id="trace">Console Trace</button>
+      <button id="globalError">Trigger a Global Error</button>
     </section>
   </main>
 
   <script>
-    let form = document.querySelector('form');
-    form.addEventListener('submit', e => {
+    window.onerror = function (message, source, lineno, colno, error) {
+      console.log('Caught a global error:', message, 'at', source, 'line:', lineno, 'column:', colno);
+      // Report error to TrackJS
+      TrackJS.track(message);
+    };
+
+    let calcForm = document.querySelector('form');
+    calcForm.addEventListener('submit', e => {
       e.preventDefault();
-      let output = document.querySelector('output');
-      let firstNum = document.querySelector('#first-num').value;
-      let secondNum = document.querySelector('#second-num').value;
-      let operator = document.querySelector('#operator').value;
-      output.innerHTML = eval(`${firstNum} ${operator} ${secondNum}`);
+      let resultDisplay = document.querySelector('output');
+      let num1 = document.querySelector('#first-num').value;
+      let num2 = document.querySelector('#second-num').value;
+      let operation = document.querySelector('#operator').value;
+      try {
+        if (num1 === '' || num2 === '') throw new Error('Both input numbers are required.');
+        if (isNaN(num1) || isNaN(num2)) throw new Error('Inputs must be valid numbers.');
+        resultDisplay.innerHTML = eval(`${num1} ${operation} ${num2}`);
+      } catch (calcError) {
+        resultDisplay.innerHTML = calcError.message;
+        console.error(calcError.message);
+        TrackJS.track(calcError.message);
+      }
     });
 
-    let errorBtns = Array.from(document.querySelectorAll('#error-btns > button'));
+    let consoleActions = {
+      log: () => console.log('Logging a message for demonstration'),
+      error: () => console.error('An error occurred in the demonstration'),
+      count: () => console.count('Count button clicked'),
+      warn: () => console.warn('Warning message for demonstration'),
+      assert: () => console.assert(false, 'Assertion failed: Condition is false'),
+      clear: () => console.clear(),
+      dir: () => console.dir(document.body),
+      dirxml: () => console.dirxml(document),
+      groupStart: () => {
+        console.group('Grouped Log Messages');
+        console.log('This is the first log in the group');
+        console.log('This is the second log in the group');
+      },
+      groupEnd: () => console.groupEnd(),
+      table: () => console.table([{ name: 'Sidhant Singhvi', age: 18 }]),
+      startTimer: () => console.time('Demo Timer'),
+      endTimer: () => console.timeEnd('Demo Timer'),
+      trace: () => console.trace('Trace message demonstration'),
+      globalError: () => induceGlobalError()
+    };
 
-    // Start your code here
-    // You may move this JS to another file if you wish
+    document.querySelectorAll('#error-btns > button').forEach(button => {
+      let id = button.id;
+      button.addEventListener('click', consoleActions[id]);
+    });
+
+    function induceGlobalError() {
+      try {
+        // This will throw an error because undefinedFunction is not defined
+        undefinedFunction();
+      } catch (globalError) {
+        console.log('Caught a global error:', globalError.message);
+        // Report error to TrackJS
+        TrackJS.track(globalError.message);
+      }
+    }
+
+    class CustomLocalError extends Error {
+      constructor(message) {
+        super(message);
+        this.name = 'CustomLocalError';
+      }
+    }
+
+    // Example usage of CustomLocalError
+    try {
+      throw new CustomLocalError('A local custom error has occurred for demonstration purposes.');
+    } catch (localError) {
+      console.error(localError.name + ': ' + localError.message);
+      TrackJS.track(localError.message);
+    }
   </script>
 </body>
 
